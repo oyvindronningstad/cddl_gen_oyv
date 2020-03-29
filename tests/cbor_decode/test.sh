@@ -1,13 +1,11 @@
 #!/bin/bash
 
+if ! [ -d "build" ]; then mkdir build; fi
+pushd build
+
 for dir in 'test1_suit_old_formats/' 'test2_suit/' 'test3_simple/' 'test5_strange/' ;
 do
-        pushd "$dir"
-        if [ -d "build" ]; then rm -r build; fi
-        mkdir build
-        cd build
-        cmake -GNinja -DBOARD=native_posix .. 2>&1 1> test.log
-        ninja > test.log
-        ninja run
-        popd
+        west build -b native_posix "../$dir" -d "$dir" -t run "$@" #2>&1 1> test.log
 done
+
+popd
