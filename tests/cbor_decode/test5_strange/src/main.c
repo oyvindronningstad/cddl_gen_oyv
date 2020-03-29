@@ -550,6 +550,37 @@ void test_range(void)
 }
 
 
+void test_tag(void)
+{
+	const uint8_t payload_tag1[] = {0x84,
+		0xc0, 0x00, // tag(0), 0
+		0xcc, 0x1, // tag(12), 1
+		0xd8, 0x7b, 0x65, 0x68, 0x65, 0x6c, 0x6c, 0x6f, // tag(123), "hello"
+		0xd9, 0x04, 0xd2, 0x81, 0x00, // tag(1234), Level4
+	};
+
+	const uint8_t payload_tag2[] = {0x85,
+		0xc0, 0x00, // tag(0), 0
+		0xcc, 0x38, 99, // tag(12), -100
+		0xd8, 0x7b, 0x65, 0x68, 0x65, 0x6c, 0x6c, 0x6f, // tag(123), "hello"
+		0xd9, 0x04, 0xd2, 0x81, 0x00, // tag(1234), Level4
+		0xd9, 0x30, 0x39, 0x01, // tag(12345), 1
+	};
+
+	Tag_t output;
+
+	zassert_true(cbor_decode_Tag(payload_tag1, sizeof(payload_tag1), &output,
+				true), NULL);
+	zassert_equal(1, output._Tag_tagInt, NULL);
+	zassert_false(output._Tag_optTag1_present, NULL);
+
+	zassert_true(cbor_decode_Tag(payload_tag2, sizeof(payload_tag2), &output,
+				true), NULL);
+	zassert_equal(-100, output._Tag_tagInt, NULL);
+	zassert_true(output._Tag_optTag1_present, NULL);
+}
+
+
 void test_main(void)
 {
 	ztest_test_suite(cbor_decode_test5,
@@ -561,7 +592,8 @@ void test_main(void)
 			 ztest_unit_test(test_map),
 			 ztest_unit_test(test_nested_list_map),
 			 ztest_unit_test(test_nested_map_list_map),
-			 ztest_unit_test(test_range)
+			 ztest_unit_test(test_range),
+			 ztest_unit_test(test_tag)
 	);
 	ztest_run_test_suite(cbor_decode_test5);
 }

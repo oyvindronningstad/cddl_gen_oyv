@@ -87,6 +87,7 @@ def do_flatten(to_flatten, allow_multi=False):
             and (not (to_flatten.key and to_flatten.value[0].key)):
         to_flatten.value[0].minQ *= to_flatten.minQ
         to_flatten.value[0].maxQ *= to_flatten.maxQ
+        to_flatten.value[0].tags = to_flatten.tags + to_flatten.value[0].tags
         if not to_flatten.value[0].label:
             to_flatten.value[0].label = to_flatten.label
         if not to_flatten.value[0].key:
@@ -196,6 +197,7 @@ class CddlParser:
         # "MAP","GROUP", "UNION" and "OTHER". "OTHER" represents a CDDL type defined with '='.
         self.type = None
         self.match_str = ""
+        self.tags = []
 
     def set_id_prefix(self, id_prefix):
         self.id_prefix = id_prefix
@@ -398,6 +400,9 @@ class CddlParser:
             self.cbor.maxQ = self.DEFAULT_MAXQ
         self.cbor.set_base_name("cbor")
 
+    def add_tag(self, tag):
+        self.tags.append(tag)
+
     # Set the self.key of this element. For use during CDDL parsing.
     def set_key(self, key):
         if self.key is not None:
@@ -539,7 +544,9 @@ class CddlParser:
             (r'\.cbor (?P<item>[\w-]+)',
              lambda type_str: self.set_cbor(parse(type_str)[0], False)),
             (r'\.cborseq (?P<item>[\w-]+)',
-             lambda type_str: self.set_cbor(parse(type_str)[0], True))
+             lambda type_str: self.set_cbor(parse(type_str)[0], True)),
+            (r'\#6\.(?P<item>\d+)',
+             lambda tag_str: self.add_tag(int(tag_str)))
         ]
         all_type_regex = '|'.join([regex for (regex, _) in (types[:3] + types[5:])])
         for i in range(0, all_type_regex.count("item")):
@@ -1137,7 +1144,8 @@ class CodeGenerator(CddlParser):
     def repeated_single_func_impl_condition(self):
         return self.repeated_type_def_condition() \
                 or (self.type in ["LIST", "MAP"] and self.multi_member()) \
-                or (self.multi_xcode_condition() and (self.self_repeated_multi_var_condition() or self.range_check_condition()))
+                or (self.multi_xcode_condition() and (self.self_repeated_multi_var_condition()
+                    or self.range_check_condition() or self.tags))
 
     # Return the function name and arguments to call to encode/decode this element.
     def single_func(self, access=None):
@@ -1272,6 +1280,10 @@ class CodeGenerator(CddlParser):
                     f"{self.cbor.full_xcode()})), bstrx_cbor_end_{mode}(p_state), int_res"]))
         return self.xcode_single_func_prim()
 
+    def xcode_tags(self):
+        assert self.tags, "No tags to xcode."
+        return " && ".join(f"tag_{'expect' if mode == 'decode' else mode}(p_state, {tmp_val_or_null(tag)})" for tag in self.tags)
+
     def range_checks(self, access):
         if self.value is not None:
             return []
@@ -1318,6 +1330,8 @@ class CodeGenerator(CddlParser):
         xcoders = []
         if self.key:
             xcoders.append(self.key.full_xcode())
+        if self.tags:
+            xcoders.append(self.xcode_tags())
         if mode == "decode":
             xcoders.append(xcoder())
             xcoders.extend(range_checks)

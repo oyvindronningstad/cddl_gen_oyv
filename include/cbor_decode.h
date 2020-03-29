@@ -155,6 +155,9 @@ bool list_end_decode(cbor_state_t * p_state);
 /** Finalize decoding a MAP */
 bool map_end_decode(cbor_state_t * p_state);
 
+/** Decode a semantic tag with a specific value. */
+bool tag_expect(cbor_state_t *p_state, uint32_t *p_result);
+
 /** Decode a "nil" primitive value. */
 bool nilx_expect(cbor_state_t * p_state, void *p_result);
 

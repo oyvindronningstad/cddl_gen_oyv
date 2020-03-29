@@ -63,6 +63,9 @@ bool list_end_encode(cbor_state_t * p_state, size_t max_num);
 /** Encode end of a MAP. Do some checks and deallocate backup. */
 bool map_end_encode(cbor_state_t * p_state, size_t max_num);
 
+/** Encode a semantic tag. */
+bool tag_encode(cbor_state_t *p_state, const uint32_t *p_input);
+
 /** Encode a "nil" primitive value. p_result should be NULL. */
 bool nilx_encode(cbor_state_t * p_state, const void *p_result);
 

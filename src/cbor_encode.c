@@ -330,6 +330,14 @@ bool map_end_encode(cbor_state_t *p_state, size_t max_num)
 	return list_map_end_encode(p_state, max_num, CBOR_MAJOR_TYPE_MAP);
 }
 
+bool tag_encode(cbor_state_t *p_state, const uint32_t *p_input)
+{
+	if (!uint32_encode(p_state, p_input, CBOR_MAJOR_TYPE_TAG)){
+		FAIL();
+	}
+	p_state->elem_count--; // tags shouldn't be counted
+	return true;
+}
 
 bool nilx_encode(cbor_state_t *p_state, const void *p_input)
 {

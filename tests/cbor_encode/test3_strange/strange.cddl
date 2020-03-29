@@ -60,3 +60,11 @@ Range = [
 	+multiHello: "hello",
 	+multi0to10: 0..10
 ]
+
+Tag = [
+	tag0: #6.0(0),
+	tagInt: #6.12(int),
+	tagHello: #6.123("hello"),
+	tagList: #6.1234(Level4),
+	optTag1: ?#6.12345(1)
+]

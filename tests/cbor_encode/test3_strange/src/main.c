@@ -19,19 +19,19 @@
 #define END
 #endif
 
-void print_compare_strings(uint8_t *str1, uint8_t *str2, size_t size)
+void print_compare_strings(const uint8_t *str1, const uint8_t *str2, size_t size)
 {
 	for (uint32_t i = 0; i <= size / 16; i++) {
 		for (uint32_t j = 0; j < 16 && (i*16+j) < size; j++) {
-			printk ("%x ", str1[i*16 + j]);
+			printk ("%02x ", str1[i*16 + j]);
 		}
 		printk("\r\n");
 		for (uint32_t j = 0; j < 16 && (i*16+j) < size; j++) {
-			printk ("%x ", str2[i*16 + j]);
+			printk ("%02x ", str2[i*16 + j]);
 		}
-		printk("\r\n");
+		printk("\r\n ");
 		for (uint32_t j = 0; j < 16 && (i*16+j) < size; j++) {
-			printk ("%x ", str1[i*16 + j] != str2[i*16 + j]);
+			printk ("%s  ", str1[i*16 + j] != str2[i*16 + j] ? "^" : " ");
 		}
 		printk("\r\n");
 		printk("\r\n");
@@ -408,7 +408,7 @@ void test_levels(void)
 		sizeof(exp_payload_levels1)-1, &level1, &out_len), NULL);
 	zassert_true(cbor_encode_Level1(output,
 		sizeof(output), &level1, &out_len), NULL);
-	
+
 	zassert_equal(sizeof(exp_payload_levels1), out_len, "%d != %d", sizeof(exp_payload_levels1), out_len);
 	zassert_mem_equal(exp_payload_levels1, output, sizeof(exp_payload_levels1), NULL);
 }
@@ -707,6 +707,44 @@ void test_range(void)
 	zassert_mem_equal(exp_payload_range3, output, sizeof(exp_payload_range3), NULL);
 }
 
+
+void test_tag(void)
+{
+	const uint8_t exp_payload_tag1[] = {LIST(4),
+		0xc0, 0x00, // tag(0), 0
+		0xcc, 0x1, // tag(12), 1
+		0xd8, 0x7b, 0x65, 0x68, 0x65, 0x6c, 0x6c, 0x6f, // tag(123), "hello"
+		0xd9, 0x04, 0xd2, LIST(1), 0x00, END // tag(1234), Level4
+		END
+	};
+
+	const uint8_t exp_payload_tag2[] = {LIST(5),
+		0xc0, 0x00, // tag(0), 0
+		0xcc, 0x38, 99, // tag(12), -100
+		0xd8, 0x7b, 0x65, 0x68, 0x65, 0x6c, 0x6c, 0x6f, // tag(123), "hello"
+		0xd9, 0x04, 0xd2, LIST(1), 0x00, END // tag(1234), Level4
+		0xd9, 0x30, 0x39, 0x01, // tag(12345), 1
+		END
+	};
+
+	Tag_t input1 = {._Tag_tagInt = 1, ._Tag_optTag1_present = false};
+	Tag_t input2 = {._Tag_tagInt = -100, ._Tag_optTag1_present = true};
+
+	uint8_t output[35];
+	size_t out_len;
+
+	zassert_true(cbor_encode_Tag(output, sizeof(output), &input1,
+				&out_len), NULL);
+	zassert_equal(sizeof(exp_payload_tag1), out_len, "%d != %d\r\n", sizeof(exp_payload_tag1), out_len);
+	zassert_mem_equal(exp_payload_tag1, output, sizeof(exp_payload_tag1), NULL);
+
+	zassert_true(cbor_encode_Tag(output, sizeof(output), &input2,
+				&out_len), NULL);
+	zassert_equal(sizeof(exp_payload_tag2), out_len, "%d != %d\r\n", sizeof(exp_payload_tag2), out_len);
+	zassert_mem_equal(exp_payload_tag2, output, sizeof(exp_payload_tag2), NULL);
+}
+
+
 void test_main(void)
 {
 	ztest_test_suite(cbor_encode_test3,
@@ -718,7 +756,8 @@ void test_main(void)
 			 ztest_unit_test(test_map),
 			 ztest_unit_test(test_nested_list_map),
 			 ztest_unit_test(test_nested_map_list_map),
-			 ztest_unit_test(test_range)
+			 ztest_unit_test(test_range),
+			 ztest_unit_test(test_tag)
 	);
 	ztest_run_test_suite(cbor_encode_test3);
 }

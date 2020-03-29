@@ -372,6 +372,27 @@ bool map_end_decode(cbor_state_t *p_state)
 }
 
 
+bool tag_expect(cbor_state_t *p_state, uint32_t *p_result)
+{
+	uint32_t value;
+	uint8_t major_type = MAJOR_TYPE(*p_state->p_payload);
+
+	if (major_type != CBOR_MAJOR_TYPE_TAG) {
+		/* Value to be read doesn't have the right type. */
+		FAIL();
+	}
+	p_state->elem_count++; // The tag shouldn't be counted.
+	if (!uint32_decode(p_state, &value)) {
+		p_state->elem_count--;
+		FAIL();
+	}
+	if (value != *p_result) {
+		p_state->elem_count--;
+		FAIL();
+	}
+	return true;
+}
+
 static bool primx_decode(cbor_state_t * p_state, uint32_t *p_result)
 {
 	uint8_t major_type = MAJOR_TYPE(*p_state->p_payload);
